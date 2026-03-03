@@ -23,9 +23,11 @@ def neighbor_bonus(board, y, x):
         
     return river_bonus, mountain_bonus
     
+# turn all single-tile features into plain ("_") tile
 def feature_cleanup(board):
     new_board = [row[:] for row in board] # make deepcopy of board to not affect original
         
+    # list of all neighbour tiles coordinates
     neighbours = [(-1, -1), (0, -1), (1, -1),
                   (-1, 0),           (1, 0),
                   (-1, 1), (0, 1), (1, 1)]
@@ -38,8 +40,9 @@ def feature_cleanup(board):
             
             isolated = True
             
+            # look for same-feature tiles in 1-tile area (including corners)
             for dx, dy in neighbours:
-                nx, ny = x+dx, y+dy
+                nx, ny = x+dx, y+dy # apply neighbour tile coordinate differences
                 if 0 <= nx < BOARD_WIDTH and 0 <= ny < BOARD_HEIGHT:
                     if new_board[ny][nx] == tile:
                         isolated = False
@@ -81,12 +84,18 @@ def generate_map():
     try: 
         with open("map.txt", "w") as file:
             file.write(lines)
+            
     except ValueError:
         print("Wrong file type!")
-    print(weights)
-    
+
 def main():
-    generate_map()
-    
+    regenerate = True
+    usr_answer = ""
+    while regenerate: # map generation loop
+        generate_map()
+        usr_answer = input('Would you like to generate the map again?\n(Please enter "Y" to generate again.)\n')
+        if usr_answer.lower() != "y":
+            regenerate = False
+        
 if __name__ == "__main__":
     main()
