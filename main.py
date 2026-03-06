@@ -2,6 +2,26 @@ import random
     
 BOARD_HEIGHT = 50
 BOARD_WIDTH = 100
+
+# list of all neighbour tiles coordinates
+NEIGHBOURS = [(-1, -1), (0, -1), (1, -1),
+                (-1, 0),           (1, 0),
+                (-1, 1), (0, 1), (1, 1)]
+    
+def update_map(new_board):
+    lines = ""
+ 
+    for y in range(BOARD_HEIGHT):
+        lines += "".join(new_board[y]) + "\n"
+        
+    try: 
+        with open("map.txt", "w") as file:
+            file.writelines(lines)
+            print("Updated the board!")
+            return new_board
+            
+    except ValueError:
+        print("Wrong file type!")
     
 def neighbor_bonus(board, y, x):
     # defining bonuses so they don't stack up infinitely
@@ -26,11 +46,6 @@ def neighbor_bonus(board, y, x):
 # turn all single-tile features into plain ("_") tile
 def feature_cleanup(board):
     new_board = [row[:] for row in board] # make deepcopy of board to not affect original
-        
-    # list of all neighbour tiles coordinates
-    neighbours = [(-1, -1), (0, -1), (1, -1),
-                  (-1, 0),           (1, 0),
-                  (-1, 1), (0, 1), (1, 1)]
     
     for y in range(BOARD_HEIGHT):
         for x in range(BOARD_WIDTH):
@@ -41,7 +56,7 @@ def feature_cleanup(board):
             isolated = True
             
             # look for same-feature tiles in 1-tile area (including corners)
-            for dx, dy in neighbours:
+            for dx, dy in NEIGHBOURS:
                 nx, ny = x+dx, y+dy # apply neighbour tile coordinate differences
                 if 0 <= nx < BOARD_WIDTH and 0 <= ny < BOARD_HEIGHT:
                     if new_board[ny][nx] == tile:
@@ -85,17 +100,107 @@ def generate_map():
         with open("map.txt", "w") as file:
             file.write(lines)
             
+        return board
     except ValueError:
         print("Wrong file type!")
+    
+# Work in progress
+def find_path(board):
+    # define some coordinates to simplify testing and implementing features
+    start = (14, 2) # x, y
+    start_tile = board[start[1]][start[0]] # O on board
+    stop = (6, 7)
+    stop_tile = board[stop[1]][stop[0]] # Q on board
+        
+    # start and stop tiles have to be on plain ("_") tile
+    if start_tile not in "O_":
+        # pick another tile
+        pass
+    else:
+        if start_tile != "O":
+            # mark it on board 
+            board[start[1]][start[0]] = "O"
+            board = update_map(board)
+        if stop_tile not in "Q_":
+            # pick another tile
+            pass
+        else:
+            if stop_tile != "Q":
+                # mark it on board 
+                board[stop[1]][stop[0]] = "Q"
+                board = update_map(board)
+                
+                
+                
+            unvisited = {}
+            # make a dict of tiles with distance from start
+            for y in range(BOARD_HEIGHT):
+                for x in range(BOARD_WIDTH):
+                    unvisited[f"{x}_{y}"] = float('inf')
+                 
+            # make start tile distance 0 (because it's start)   
+            unvisited[f"{start[0]}_{start[1]}"] = 0
+                        
+            # pick the tile with smallest distance
+            current_node= min(unvisited, key=unvisited.get)
+            
+            closest_neighbor = float('inf')
+            
+            for dx, dy in NEIGHBOURS:
+                nx, ny = start[0]+dx, start[1]+dy # apply neighbour tile coordinate differences
+                # assign distance for tiles, don't change mountain because it's not meant to be traversable
+                if 0 <= nx < BOARD_WIDTH and 0 <= ny < BOARD_HEIGHT:
+                    if board[ny][nx] == "~":
+                        unvisited[f"{nx}_{ny}"] = 2
+                    elif board[ny][nx] == "_":
+                        unvisited[f"{nx}_{ny}"] = 1
+                        
+                    # pick the neighbor with shortest path
+                    closest_neighbor = {True: unvisited[f"{nx}_{ny}"], False: closest_neighbor}[closest_neighbor > unvisited[f"{nx}_{ny}"]]
+                                    
+            if unvisited[current_node] == float('inf'):
+                print("Only unreachable nodes remain!")
+            
+            # remove visited tile from unvisited
+            unvisited.pop(current_node)
+            
+            if not unvisited: # empty dict is equal to False
+                print("All tiles visited!")
+           
+# Temporary testing helper while developing functionalities                  
+def test():
+    # board = generate_map()
+    
+    board = []
+    line = []
+    try: 
+        with open("map.txt", "r") as file:
+            for row in file:
+                for tile in row[:BOARD_WIDTH]:
+                    # to make sure it's a list and not a string (can't assign specific tiles to string later)
+                    line.append(tile)
+                board.append(line)
+                line = []
+                            
+    except ValueError:
+        print("Wrong file type!")
+        
+    find_path(board)
 
 def main():
-    regenerate = True
-    usr_answer = ""
-    while regenerate: # map generation loop
-        generate_map()
-        usr_answer = input('Would you like to generate the map again?\n(Please enter "Y" to generate again.)\n')
-        if usr_answer.lower() != "y":
-            regenerate = False
-        
+    test()
+    
+    # Working correctly, leave it commented for now to not disturb while implementing other functionalities and testing
+    # regenerate = True
+    # usr_answer = ""
+    # while regenerate: # map generation loop
+    #     board = generate_map()
+    #     usr_answer = input('Would you like to generate the map again?\n(Please enter "Y" to generate again.)\n')
+    #     if usr_answer.lower() != "y":
+    #         regenerate = False
+    
+    # if not regenerate:
+    #     find_path(board)
+    
 if __name__ == "__main__":
     main()
