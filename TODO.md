@@ -9,3 +9,5 @@ What I plan to do with a few thoughts behind some features
 - [x] make a loop asking user if he wants to re-generate the map
 - [ ] make a pathfinding algorithm from point A to B
     - [x] display start and stop points on board
+    - [x] find any path from point A to B
+    - [ ] find the best path

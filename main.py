@@ -1,4 +1,5 @@
 import random
+import time
     
 BOARD_HEIGHT = 50
 BOARD_WIDTH = 100
@@ -129,9 +130,7 @@ def find_path(board):
                 # mark it on board 
                 board[stop[1]][stop[0]] = "Q"
                 board = update_map(board)
-                
-                
-                
+                                                
             unvisited = {}
             # make a dict of tiles with distance from start
             for y in range(BOARD_HEIGHT):
@@ -143,33 +142,73 @@ def find_path(board):
                         
             # pick the tile with smallest distance
             current_node= min(unvisited, key=unvisited.get)
+            path = []
+            dead_ends = []
+            unvisited["a_b"] = float('inf') # default tile for comparison
+            tile = " "
+            current_tile = [0, 0]
             
-            closest_neighbor = float('inf')
-            
-            for dx, dy in NEIGHBOURS:
-                nx, ny = start[0]+dx, start[1]+dy # apply neighbour tile coordinate differences
-                # assign distance for tiles, don't change mountain because it's not meant to be traversable
-                if 0 <= nx < BOARD_WIDTH and 0 <= ny < BOARD_HEIGHT:
-                    if board[ny][nx] == "~":
-                        unvisited[f"{nx}_{ny}"] = 2
-                    elif board[ny][nx] == "_":
-                        unvisited[f"{nx}_{ny}"] = 1
+            # while current node isn't the stop tile
+            while current_node != f"{stop[0]}_{stop[1]}":
+                time.sleep(0.1)
+                # print(f"BEFORE: cur= {current_node}")
+                if unvisited[current_node] == float('inf'):
+                    print("Only unreachable nodes remain!")
+                    break
+                                 
+                closest_neighbor = "a_b" 
+                current_tile[0] = int(current_node.split("_")[0])
+                current_tile[1] = int(current_node.split("_")[1])
+                             
+                for dx, dy in NEIGHBOURS:
+                    nx, ny = current_tile[0]+dx, current_tile[1]+dy # apply neighbour tile coordinate differences
+                    # assign distance for tiles, don't change mountain because it's not meant to be traversable
+                    if 0 <= nx < BOARD_WIDTH and 0 <= ny < BOARD_HEIGHT and f"{nx}_{ny}" in unvisited:
+                        if board[ny][nx] == "~":
+                            unvisited[f"{nx}_{ny}"] = 2
+                        elif board[ny][nx] == "_":
+                            unvisited[f"{nx}_{ny}"] = 1
+                        elif board[ny][nx] == "Q": # end tile
+                            unvisited[f"{nx}_{ny}"] = 0
+                            
+                        # pick the neighbor with shortest path
+                        closest_neighbor = {True: f"{nx}_{ny}", False: closest_neighbor}[unvisited[closest_neighbor] > unvisited[f"{nx}_{ny}"]]
+
+                board[current_tile[1]][current_tile[0]] = tile
+                board = update_map(board)
                         
-                    # pick the neighbor with shortest path
-                    closest_neighbor = {True: unvisited[f"{nx}_{ny}"], False: closest_neighbor}[closest_neighbor > unvisited[f"{nx}_{ny}"]]
-                                    
-            if unvisited[current_node] == float('inf'):
-                print("Only unreachable nodes remain!")
-            
-            # remove visited tile from unvisited
-            unvisited.pop(current_node)
-            
-            if not unvisited: # empty dict is equal to False
-                print("All tiles visited!")
+                if current_node in unvisited:
+                    path.append(current_node)
+                
+                # if no neighbors left, trace back
+                if closest_neighbor == "a_b":
+                    dead_ends.append(path.pop())
+                    closest_neighbor = path.pop()
+                    if closest_neighbor in dead_ends: # trace back more
+                        closest_neighbor = path.pop()
+                    unvisited[closest_neighbor] = 0
+                
+                # remove visited tile from unvisited
+                del unvisited[current_node]
+                
+                # move to the next tile
+                current_node = closest_neighbor  
+                
+                # mark the path on board
+                tile = board[current_tile[1]][current_tile[0]]
+                board[current_tile[1]][current_tile[0]] = "."
+                board = update_map(board)   
+                # print(f"AFTER: cur= {current_node}")
+                
+                
+                if not unvisited: # empty dict is equal to False
+                    print("All tiles visited!")
+                    print("But no way found :(")
+                    break
            
 # Temporary testing helper while developing functionalities                  
 def test():
-    # board = generate_map()
+    board = generate_map()
     
     board = []
     line = []
