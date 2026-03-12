@@ -4,6 +4,10 @@ import time
 BOARD_HEIGHT = 50
 BOARD_WIDTH = 100
 
+PLAIN = "_"
+RIVER = "~"
+MOUNTAIN = "&"
+
 # list of all neighbour tiles coordinates
 NEIGHBOURS = [(-1, -1), (0, -1), (1, -1),
                 (-1, 0),           (1, 0),
@@ -31,27 +35,27 @@ def neighbor_bonus(board, y, x):
     
     # check previous tile
     if x > 0: 
-        if board[y][x-1] == "~":
+        if board[y][x-1] == RIVER:
             river_bonus *= 2
-        elif board[y][x-1] == "&":
+        elif board[y][x-1] == MOUNTAIN:
             mountain_bonus *= 4.5
     # check tile above
     if y > 0:
-        if board[y-1][x] == "~":
+        if board[y-1][x] == RIVER:
             river_bonus *= 2.5
-        elif board[y-1][x] == "&":
+        elif board[y-1][x] == MOUNTAIN:
             mountain_bonus *= 3
         
     return river_bonus, mountain_bonus
     
-# turn all single-tile features into plain ("_") tile
+# turn all single-tile features into PLAIN
 def feature_cleanup(board):
     new_board = [row[:] for row in board] # make deepcopy of board to not affect original
     
     for y in range(BOARD_HEIGHT):
         for x in range(BOARD_WIDTH):
             tile = new_board[y][x]
-            if tile == "_":
+            if tile == PLAIN:
                 continue
             
             isolated = True
@@ -65,13 +69,12 @@ def feature_cleanup(board):
                         break
                     
             if isolated:
-                new_board[y][x] = "_"
+                new_board[y][x] = PLAIN
                 
     return new_board        
     
 def generate_map():
-    # plain tile | river tile | mountain tile
-    features = ("_", "~", "&")
+    features = (PLAIN, RIVER, MOUNTAIN)
             
     # initializing 2d array
     board = [[None for _ in range(BOARD_WIDTH)] for _ in range(BOARD_HEIGHT)] 
@@ -114,7 +117,7 @@ def find_path(board, start, stop):
     start_tile = board[start[1]][start[0]] # O on board
     stop_tile = board[stop[1]][stop[0]] # Q on board
         
-    # start and stop tiles have to be on plain ("_") tile
+    # start and stop tiles have to be on PLAIN
     if start_tile not in "O_":
         # pick another tile
         pass
@@ -160,7 +163,7 @@ def find_path(board, start, stop):
                     print("Only unreachable nodes remain!")
                     break
                                                  
-                closest_neighbor = "a_b" # could change it to None someday
+                closest_neighbor = "a_b"
 
                 # get the coordinates
                 current_tile[0] = int(current_node.split("_")[0])
@@ -170,16 +173,16 @@ def find_path(board, start, stop):
                     nx, ny = current_tile[0]+dx, current_tile[1]+dy # apply neighbour tile coordinate differences
                     # assign distance for tiles, don't change mountain because it's not meant to be traversable
                     if 0 <= nx < BOARD_WIDTH and 0 <= ny < BOARD_HEIGHT and f"{nx}_{ny}" in unvisited:
-                        if board[ny][nx] == "~":
+                        if board[ny][nx] == RIVER:
                             unvisited[f"{nx}_{ny}"] = 2
-                        elif board[ny][nx] == "_":
+                        elif board[ny][nx] == PLAIN:
                             unvisited[f"{nx}_{ny}"] = 1
                         elif board[ny][nx] == "Q": # end tile
                             unvisited[f"{nx}_{ny}"] = 0
                             
                         unvisited[f"{nx}_{ny}"] += estimate_distance((nx, ny), stop)
                                                     
-                        # pick the neighbor with shortest path
+                        # pick the neighbor closest to end goal
                         closest_neighbor = {True: f"{nx}_{ny}", False: closest_neighbor}[unvisited[closest_neighbor] > unvisited[f"{nx}_{ny}"]]
 
                 board[current_tile[1]][current_tile[0]] = tile
@@ -238,7 +241,6 @@ def test():
                             
     except ValueError:
         print("Wrong file type!")
-        
     
     print(find_path(board, (14,2), (83,46)))
 
