@@ -12,6 +12,9 @@ MOUNTAIN = "&"
 NEIGHBOURS = [(-1, -1), (0, -1), (1, -1),
                 (-1, 0),           (1, 0),
                 (-1, 1), (0, 1), (1, 1)]
+
+CORNER_NEIGHBOURS = [(-1, -1), (1, -1),
+                     (-1, 1), (1, 1)]
     
 def update_map(new_board):
     lines = ""
@@ -22,11 +25,10 @@ def update_map(new_board):
     try: 
         with open("map.txt", "w") as file:
             file.writelines(lines)
-            # print("Updated the board!")
             return new_board
             
-    except ValueError:
-        print("Wrong file type!")
+    except FileNotFoundError:
+        print("Wrong file!")
     
 def neighbor_bonus(board, y, x):
     # defining bonuses so they don't stack up infinitely
@@ -105,122 +107,96 @@ def generate_map():
             file.write(lines)
             
         return board
-    except ValueError:
-        print("Wrong file type!")
+    except FileNotFoundError:
+        print("Wrong file!")
    
+# returns euclidean distance from current to target node
 def estimate_distance(current_node, target_node):
     return ((target_node[0]-current_node[0])**2 + (target_node[1]-current_node[1])**2)**0.5
    
-# Work in progress
-def find_path(board, start, stop):
-    # get the tiles of start and stop
-    start_tile = board[start[1]][start[0]] # O on board
-    stop_tile = board[stop[1]][stop[0]] # Q on board
+def reconstruct_path(previous, current):
+    total_path = [current]
+    while current in previous:
+        current = previous[current]
+        total_path.append(current)
+    return total_path[::-1]
+   
+def find_path(board, start, goal):
+    # the heuristic is estimate_distance()
+    open_nodes = [start] # (x, y): considerable elements for path
+    previous = {} # (x, y): distance - but for the previous node on our path
         
-    # start and stop tiles have to be on PLAIN
-    if start_tile not in "O_":
-        # pick another tile
-        pass
-    else:
-        if start_tile != "O":
-            # mark it on board 
-            board[start[1]][start[0]] = "O"
-            board = update_map(board)
-        if stop_tile not in "Q_":
-            # pick another tile
-            pass
-        else:
-            if stop_tile != "Q":
-                # mark it on board 
-                board[stop[1]][stop[0]] = "Q"
-                board = update_map(board)
-                                        
-            unvisited = {}
-            tile_path = {}
-            # make a dict of tiles with distance from start and a dict of path for every tile
-            for y in range(BOARD_HEIGHT):
-                for x in range(BOARD_WIDTH):
-                    unvisited[(x, y)] = float('inf')
-                    tile_path[(x, y)] = []
-                             
-            # make start tile distance 0 (because it's start)   
-            unvisited[(start[0], start[1])] = 0
-                        
-            # pick the tile with smallest distance
-            current_node = min(unvisited, key=unvisited.get)
+    cost_from_start = {} # (x, y): distance; cheapest path from start to n
+    total_cost = {} # (x, y): distance; cheapest path from start to goal through n
+    
+    for y in range(BOARD_HEIGHT):
+        for x in range(BOARD_WIDTH):
+            cost_from_start[(x, y)] = float('inf') 
+            total_cost[(x, y)] = float('inf')
+    
+    cost_from_start[start] = 0 
+    total_cost[start] = estimate_distance(start, goal)
+    
+    while open_nodes:
+        # pick the tile with current known shortest distance to goal from start
+        current = min(open_nodes, key = lambda tile: total_cost[tile])
+       
+        if current == goal: 
+            return reconstruct_path(previous, current)
+        
+        open_nodes.remove(current) 
+                
+        for dx, dy in NEIGHBOURS:
+            nx, ny = current[0] + dx, current[1] + dy # get the real, neighbor coordinates
             
-            path = []
-            dead_ends = []
-            unvisited[(-1, -1)] = float('inf') # default tile for comparison
-            tile = " "
-            # current_tile = [0, 0]
-                        
-            # while current node isn't the stop tile
-            while unvisited:
-                # print(tile_path[current_node])
-                time.sleep(0.1)
-                if unvisited[current_node] == float('inf'):
-                    print("Only unreachable nodes remain!")
-                    break
-                                                 
-                closest_neighbor = (-1, -1)
-                
-                
-
-                for dx, dy in NEIGHBOURS:
-                    nx, ny = int(current_node[0]) + dx, int(current_node[1]) + dy # apply neighbour tile coordinate differences
-                    # assign distance for tiles, don't change mountain because it's not meant to be traversable
-                    if 0 <= nx < BOARD_WIDTH and 0 <= ny < BOARD_HEIGHT and (nx, ny) in unvisited:
-                        if board[ny][nx] == RIVER:
-                            unvisited[(nx, ny)] = 2
-                        elif board[ny][nx] == PLAIN:
-                            unvisited[(nx, ny)] = 1
-                        elif board[ny][nx] == "Q": # end tile
-                            unvisited[(nx, ny)] = 0
-                            
-                        unvisited[(nx, ny)] += estimate_distance((nx, ny), stop)
-                                                    
-                        # pick the neighbor closest to end goal
-                        closest_neighbor = {True: (nx, ny), False: closest_neighbor}[unvisited[closest_neighbor] > unvisited[(nx, ny)]]
-
-                board[current_node[1]][current_node[0]] = tile
-                board = update_map(board)
-                        
-                if current_node in unvisited:
-                    path.append(current_node)
-                
-                # if no neighbors left, trace back
-                if closest_neighbor == (-1, -1):
-                    dead_ends.append(path.pop())
-                    closest_neighbor = path.pop()
-                    while closest_neighbor in dead_ends: # trace back more
-                        closest_neighbor = path.pop()
-                        # print(closest_neighbor)
-                    unvisited[closest_neighbor] = 0
-                
-                tile_path[closest_neighbor].append(current_node)
-                
-                # if end goal reached - stop
-                if current_node == (stop[0], stop[1]):
-                    break
-                
-                # remove visited tile from unvisited
-                del unvisited[current_node]
-                
-                # move to the next tile
-                current_node = closest_neighbor  
-                
-                # mark the path on board
-                tile = board[current_node[1]][current_node[0]]
-                board[current_node[1]][current_node[0]] = "."
-                board = update_map(board)   
-                
-            if not unvisited: # empty dict is equal to False
-                print("All tiles visited!")
-                print("But no way found :(")
-                return None
-                        
-            return tile_path[(stop[0], stop[1])]
+            if (dx, dy) in CORNER_NEIGHBOURS:
+                feature_cost = 1.4 # corners take a little longer to traverse
+            else:
+                feature_cost = 1 # 
+            
+            if 0 <= nx < BOARD_WIDTH and 0 <= ny < BOARD_HEIGHT: # if it exists
+                if board[ny][nx] == MOUNTAIN:
+                    feature_cost += float('inf') # mountains are untraversable
+                elif board[ny][nx] == RIVER:
+                    feature_cost += 1 # it takes longer to cross rivers
+                    
+                potential_cost_from_start = cost_from_start[current] + feature_cost 
+                if potential_cost_from_start < cost_from_start[(nx, ny)]:
+                    previous[(nx, ny)] = current # move on to the neighbor node
+                    cost_from_start[(nx, ny)] = potential_cost_from_start 
+                    total_cost[(nx, ny)] = potential_cost_from_start + estimate_distance((nx, ny), goal)
+                    
+                    if (nx, ny) not in open_nodes:
+                        open_nodes.append((nx, ny))
+    return None
+   
+def visualize_path(main_board, real_route):
+    if not real_route:
+        print("Error: no path found!")
+        return None
+    
+    board = [row[:] for row in main_board] # named main_board to use 'board' freely
+    route = real_route.copy()
+    current_node = route.pop(0)
+    
+    tile = board[current_node[1]][current_node[0]] # save tile for later
+    board[current_node[1]][current_node[0]] = "O"
+    
+    goal = route[-1]
+    board[goal[1]][goal[0]] = "Q" # mark goal on board
+    
+    board = update_map(board)
+    
+    while route:
+        time.sleep(0.1)
+        previous_node = current_node
+        board[previous_node[1]][previous_node[0]] = tile
+        
+        current_node = route.pop(0)
+        tile = board[current_node[1]][current_node[0]] # save tile for later
+        board[current_node[1]][current_node[0]] = "O"
+        
+        board = update_map(board)       
            
 # Temporary testing helper while developing functionalities                  
 def test():
@@ -238,9 +214,9 @@ def test():
                 line = []
                             
     except ValueError:
-        print("Wrong file type!")
+        print("Wrong file!")
     
-    print(find_path(board, (14,2), (83,46)))
+    visualize_path( board, find_path(board, (1, 47), (92, 3)) )
 
 def main():
     test()
