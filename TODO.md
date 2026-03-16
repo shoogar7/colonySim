@@ -11,4 +11,4 @@ What I plan to do with a few thoughts behind some features
     - [x] display start and stop points on board
     - [x] find any path from point A to B
     - [x] find a smarter path
-    - [ ] check if end goal is reachable
+    - [x] check if end goal is reachable

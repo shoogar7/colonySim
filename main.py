@@ -1,9 +1,10 @@
 import random
 import time
     
+DEBUG = False
+
 BOARD_HEIGHT = 50
 BOARD_WIDTH = 100
-
 PLAIN = "_"
 RIVER = "~"
 MOUNTAIN = "&"
@@ -120,8 +121,20 @@ def reconstruct_path(previous, current):
         current = previous[current]
         total_path.append(current)
     return total_path[::-1]
+
+def goal_reachable(board, tile):
+    reachable = False
+    for dx, dy in NEIGHBOURS:
+        nx, ny = tile[0] + dx, tile[1] + dy # get the real, neighbor coordinates
+        if board[ny][nx] != MOUNTAIN:
+            reachable = True
+            break
+    return reachable        
    
 def find_path(board, start, goal):
+    if not goal_reachable(board, goal):
+        return None
+    
     # the heuristic is estimate_distance()
     open_nodes = [start] # (x, y): considerable elements for path
     previous = {} # (x, y): distance - but for the previous node on our path
@@ -219,19 +232,19 @@ def test():
     visualize_path( board, find_path(board, (1, 47), (92, 3)) )
 
 def main():
-    test()
+    regenerate = True
+    usr_answer = ""
+    while regenerate: # map generation loop
+        board = generate_map()
+        usr_answer = input('Would you like to generate the map again?\n(Please enter "Y" to generate again.)\n')
+        if usr_answer.lower() != "y":
+            regenerate = False
     
-    # Working correctly, leave it commented for now to not disturb while implementing other functionalities and testing
-    # regenerate = True
-    # usr_answer = ""
-    # while regenerate: # map generation loop
-    #     board = generate_map()
-    #     usr_answer = input('Would you like to generate the map again?\n(Please enter "Y" to generate again.)\n')
-    #     if usr_answer.lower() != "y":
-    #         regenerate = False
-    
-    # if not regenerate:
-    #     find_path(board)
+    if not regenerate:
+        visualize_path( board, find_path(board, (1, 47), (92, 3)) )
     
 if __name__ == "__main__":
-    main()
+    if DEBUG:
+        test()
+    else:
+        main()
