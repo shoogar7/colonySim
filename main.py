@@ -8,6 +8,8 @@ BOARD_WIDTH = 100
 PLAIN = "_"
 RIVER = "~"
 MOUNTAIN = "&"
+TREE = "W"
+BUSH = "w"
 
 # list of all neighbour tiles coordinates
 NEIGHBOURS = [(-1, -1), (0, -1), (1, -1),
@@ -58,7 +60,7 @@ def feature_cleanup(board):
     for y in range(BOARD_HEIGHT):
         for x in range(BOARD_WIDTH):
             tile = new_board[y][x]
-            if tile == PLAIN:
+            if tile in [PLAIN, TREE, BUSH]:
                 continue
             
             isolated = True
@@ -77,7 +79,7 @@ def feature_cleanup(board):
     return new_board        
     
 def generate_map():
-    features = (PLAIN, RIVER, MOUNTAIN)
+    features = (PLAIN, RIVER, MOUNTAIN, TREE, BUSH)
             
     # initializing 2d array
     board = [[None for _ in range(BOARD_WIDTH)] for _ in range(BOARD_HEIGHT)] 
@@ -87,7 +89,7 @@ def generate_map():
     for y in range(BOARD_HEIGHT):
         for x in range(BOARD_WIDTH):
             # defining here so they don't stack up infinitely
-            weights = [0.78, 0.12, 0.1] # all add up to 1 for simplicity
+            weights = [0.76, 0.11, 0.1, 0.01, 0.02] # all add up to 1 for simplicity
             
             # calculate the bonuses
             bonuses = neighbor_bonus(board, y, x)
@@ -160,12 +162,12 @@ def find_path(board, start, goal):
         open_nodes.remove(current) 
                 
         for dx, dy in NEIGHBOURS:
-            nx, ny = current[0] + dx, current[1] + dy # get the real, neighbor coordinates
+            nx, ny = current[0] + dx, current[1] + dy # get the real neighbor coordinates
             
             if (dx, dy) in CORNER_NEIGHBOURS:
                 feature_cost = 1.4 # corners take a little longer to traverse
             else:
-                feature_cost = 1 # 
+                feature_cost = 1
             
             if 0 <= nx < BOARD_WIDTH and 0 <= ny < BOARD_HEIGHT: # if it exists
                 if board[ny][nx] == MOUNTAIN:
