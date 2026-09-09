@@ -211,7 +211,7 @@ def visualize_path(main_board, real_route):
         tile = board[current_node[1]][current_node[0]] # save tile for later
         board[current_node[1]][current_node[0]] = "O"
         
-        board = update_map(board)       
+        board = update_map(board)      
            
 # Temporary testing helper while developing functionalities                  
 def test():
@@ -223,7 +223,6 @@ def test():
         with open("map.txt", "r") as file:
             for row in file:
                 for tile in row[:BOARD_WIDTH]:
-                    # to make sure it's a list and not a string (can't assign specific tiles to string later)
                     line.append(tile)
                 board.append(line)
                 line = []

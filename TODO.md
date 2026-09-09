@@ -13,7 +13,7 @@ What I plan to do with a few thoughts behind some features
     - [x] find a smarter path
     - [x] check if end goal is reachable
 - [ ] implement more map features, 
-    - [ ] natural food trees and bushes (W - w)
+    - [x] natural food trees and bushes (W - w)
         - [ ] change on collection (V - v)
     - [ ] wetland bonus (every tile near RIVER has increased farmland yields)
     - [ ] minerals (accelerating village transformation, spawning after set amount of time or increasing possibility with the number of NPCs)
